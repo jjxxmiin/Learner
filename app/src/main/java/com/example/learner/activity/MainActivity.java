@@ -19,7 +19,7 @@ import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
-    private Button btn_train, btn_infer, btn_upload, btn_train_list;
+    private Button btn_train, btn_infer, btn_train_list;
     private EditText et_id;
     private String str_id;
     private ImageView img_main;
@@ -36,9 +36,8 @@ public class MainActivity extends AppCompatActivity {
                 .setPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA)
                 .check();
 
-        btn_train = (Button) findViewById(R.id.btn_train);
         btn_infer = (Button) findViewById(R.id.btn_infer);
-        btn_upload = (Button) findViewById(R.id.btn_upload);
+        btn_train = (Button) findViewById(R.id.btn_train);
         btn_train_list = (Button) findViewById(R.id.btn_train_list);
 
         et_id = (EditText) findViewById(R.id.et_id);
@@ -46,17 +45,7 @@ public class MainActivity extends AppCompatActivity {
         btn_train.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                str_id = et_id.getText().toString();
-                Intent intent = new Intent(MainActivity.this, TrainActivity.class);
-                intent.putExtra("id", str_id);
-                startActivity(intent);
-            }
-        });
-
-        btn_upload.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(MainActivity.this, UploadActivity.class);
+                Intent intent = new Intent(MainActivity.this, NameActivity.class);
                 startActivity(intent);
             }
         });

@@ -1,63 +1,200 @@
 package com.example.learner.activity;
 
-import android.app.Activity;
+import android.content.ClipData;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
+import android.media.ExifInterface;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 
 import com.example.learner.R;
+import com.example.learner.utils.PathUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+
+import static android.widget.Toast.LENGTH_LONG;
+
 public class TrainActivity extends AppCompatActivity {
 
-    private static final int REQUEST_IMAGE_CAPTURE = 101;
+    private static final int REQUEST_IMAGE_CAPTURE = 1;
+    private static final int REQUEST_IMAGE_ALBUM = 2;
+    private static final int REQUEST_MULTI_IMAGE_ALBUM = 3;
+    public static int NUM_IMAGES = 3;
 
-    private TextView tv_id;
-    private ImageView iv_capture;
-    private Button btn_camera, btn_save;
-
-    private String imageFilePath;
-    private Uri photoUri;
+    ImageView iv_select;
+    TextView tv_label;
+    Button btn_select, btn_send, btn_capture, btn_multi_select;
+    String selectedImagePath;
+    String[] selectedMultiImagePath = new String[NUM_IMAGES];
+    String captureImagePath;
+    String label;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_train);
 
-        tv_id = (TextView) findViewById(R.id.tv_id);
-        iv_capture = (ImageView) findViewById(R.id.iv_capture);
-        btn_camera = (Button) findViewById(R.id.btn_camera);
-        btn_save = (Button) findViewById(R.id.btn_save);
-
         Intent intent = getIntent();
-        String id = intent.getStringExtra("id");
+        label = intent.getStringExtra("label");
 
-        tv_id.setText(id);
+        tv_label = (TextView) findViewById(R.id.tv_label);
+        tv_label.setText(label);
 
-        // camera button
-        btn_camera.setOnClickListener(new View.OnClickListener() {
+        btn_send = (Button) findViewById(R.id.btn_send);
+        btn_send.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View view) {
+                connectServer(view);
+            }
+        });
+
+        btn_multi_select = (Button) findViewById(R.id.btn_multi_select);
+        btn_multi_select.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                selectMultiImage(view);
+            }
+        });
+
+        btn_select = findViewById(R.id.btn_select);
+        btn_select.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                selectImage(view);
+            }
+        });
+
+        btn_capture = findViewById(R.id.btn_capture);
+        btn_capture.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 captureImage();
             }
         });
+
+        iv_select = findViewById(R.id.iv_select);
+
+    }
+
+    @Override
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode != RESULT_OK) {
+            return;
+        }
+        switch (requestCode) {
+            case REQUEST_IMAGE_ALBUM: {
+                if (data.getData() != null) {
+                    try {
+                        Uri dataUri = data.getData();
+
+                        // get path
+                        selectedImagePath = PathUtils.getPath(getApplicationContext(), dataUri);
+
+                        // set image
+                        iv_select.setImageURI(dataUri);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+                break;
+            }
+            case REQUEST_IMAGE_CAPTURE: {
+                try{
+                    // bitmap
+                    Bitmap capture_img = BitmapFactory.decodeFile(captureImagePath);
+
+                    // file name
+                    String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+                    String pictureFile = "picture_" + timeStamp + ".jpg";
+
+                    // rotate
+                    capture_img = rotate(capture_img);
+
+                    // save
+                    createDirectoryAndSaveFile(capture_img, pictureFile);
+
+                    // set image
+                    iv_select.setImageBitmap(capture_img);
+
+                    // path
+                    selectedImagePath = captureImagePath;
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+                break;
+            }
+            case REQUEST_MULTI_IMAGE_ALBUM: {
+                Uri uri = data.getData();
+                ClipData clipData = data.getClipData();
+
+                if (clipData != null) { // multi image
+                    for (int i=0; i < clipData.getItemCount(); i++) {
+                        try {
+                            Uri dataUri =  clipData.getItemAt(i).getUri();
+                            // get path
+                            selectedImagePath = PathUtils.getPath(getApplicationContext(), dataUri);
+                            selectedMultiImagePath[i] = selectedImagePath;
+
+                            // set image
+                            iv_select.setImageURI(dataUri);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+                else if (uri != null) { // single image
+                    iv_select.setImageURI(uri);
+                    selectedMultiImagePath[0] = selectedImagePath;
+                }
+            }
+        }
+    }
+
+    public void selectMultiImage(View v) {
+        Intent intent = new Intent();
+        intent.setType("image/*");
+        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        intent.setAction(Intent.ACTION_GET_CONTENT);
+        startActivityForResult(Intent.createChooser(intent,"Select Picture"), REQUEST_MULTI_IMAGE_ALBUM);
+    }
+
+    public void selectImage(View v) {
+        Intent intent = new Intent();
+        intent.setType("image/*");
+
+        intent.setAction(Intent.ACTION_GET_CONTENT);
+        startActivityForResult(intent, REQUEST_IMAGE_ALBUM);
     }
 
     public void captureImage() {
@@ -67,63 +204,160 @@ public class TrainActivity extends AppCompatActivity {
             try {
                 photoFile = createImageFile();
             } catch (IOException e) {
-
+                Toast.makeText(this,
+                        "Photo file can't be created, please try again",
+                        Toast.LENGTH_SHORT).show();
             }
 
             if (photoFile != null) {
-                photoUri = FileProvider.getUriForFile(getApplicationContext(), getPackageName(), photoFile);
-                intent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
+                Uri imgUri = FileProvider.getUriForFile(getApplicationContext(), getPackageName(), photoFile);
+                intent.putExtra(MediaStore.EXTRA_OUTPUT, imgUri);
                 startActivityForResult(intent, REQUEST_IMAGE_CAPTURE);
             }
         }
     }
 
+    private File createImageFile() throws IOException {
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String pictureFile = "picture_" + timeStamp;
+        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File image = File.createTempFile(
+                pictureFile,
+                ".jpg",
+                storageDir
+        );
+        captureImagePath = image.getAbsolutePath();
+        return image;
+    }
+
     private void createDirectoryAndSaveFile(Bitmap imageToSave, String fileName) {
+        String img_folder = "/sdcard/Pictures/Learner";
 
-        File direct = new File(Environment.getExternalStorageDirectory() + "/Pictures");
+        File ImageDirectory = new File(img_folder);
 
-        if (!direct.exists()) {
-            File wallpaperDirectory = new File("/sdcard/Pictures/");
-            wallpaperDirectory.mkdirs();
+        imageToSave = Bitmap.createScaledBitmap(imageToSave, 1080, 1080, false);
+
+        if (!ImageDirectory.exists()) {
+            ImageDirectory.mkdirs();
         }
 
-        File file = new File("/sdcard/Pictures/", fileName);
-        if (file.exists()) {
-            file.delete();
-        }
+        File img = new File(img_folder, fileName);
+
         try {
-            FileOutputStream out = new FileOutputStream(file);
+            FileOutputStream out = new FileOutputStream(img);
             imageToSave.compress(Bitmap.CompressFormat.JPEG, 100, out);
+            sendBroadcast(new Intent( Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(img)) );
             out.flush();
             out.close();
+
+
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    // 이미지 파일을 만듭니다.
-    private File createImageFile() throws IOException {
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-        File image = File.createTempFile(
-                timeStamp,
-                ".jpg",
-                storageDir
-        );
-        imageFilePath = image.getAbsolutePath();
-        return image;
+    private Bitmap rotate(Bitmap capture_img) throws IOException {
+        Bitmap rotate_img;
+        // rotate
+        ExifInterface exif = new ExifInterface(captureImagePath);
+        int exifOrientation = exif.getAttributeInt(
+                ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+        rotate_img = _rotate(capture_img, _exifOrientationToDegrees(exifOrientation));
+
+        return rotate_img;
     }
 
-    // 사진을 찍으면 이미지를 띄웁니다.
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
+    private Bitmap _rotate(Bitmap bitmap, float degree) {
+        Matrix matrix = new Matrix();
+        matrix.postRotate(degree);
+        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+    }
 
-        if (requestCode == 101 && resultCode == Activity.RESULT_OK) {
-            Bitmap bitmap = BitmapFactory.decodeFile(imageFilePath);
-            iv_capture.setImageBitmap(bitmap);
-
-            createDirectoryAndSaveFile(bitmap, "test_img.jpg");
+    private int _exifOrientationToDegrees(int exifOrientation) {
+        if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_90) {
+            return 90;
+        } else if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_180) {
+            return 180;
+        } else if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_270) {
+            return 270;
         }
+        return 0;
+    }
+
+    private void connectServer(View v) {
+
+        if (selectedImagePath == null) {
+            Toast.makeText(this, "이미지를 선택하세요", LENGTH_LONG).show();
+        }
+        else {
+            // 서버 주소를 만듭니다.
+            EditText ipv4AddressView = findViewById(R.id.IPAddress);
+            String ipv4Address = ipv4AddressView.getText().toString();
+            EditText portNumberView = findViewById(R.id.portNumber);
+            String portNumber = portNumberView.getText().toString();
+
+            String postUrl = "http://" + ipv4Address + ":" + portNumber + "/";
+
+            // Bitmap을 설정합니다.
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inPreferredConfig = Bitmap.Config.RGB_565;
+
+            // 경로에 있는 이미지의 Bitmap을 읽어 들입니다.
+            Bitmap bitmap = BitmapFactory.decodeFile(selectedImagePath, options);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
+            byte[] byteArray = stream.toByteArray();
+
+            // 이미지를 서버에 전송합니다.
+            RequestBody postBodyImage = new MultipartBody.Builder()
+                    .setType(MultipartBody.FORM)
+                    .addFormDataPart("image", "androidFlask.jpg", RequestBody.create(MediaType.parse("image/*jpg"), byteArray))
+                    .build();
+
+            postRequest(postUrl, postBodyImage);
+        }
+    }
+
+    private void postRequest(String postUrl, RequestBody postBody) {
+
+        OkHttpClient client = new OkHttpClient();
+
+        Request request = new Request.Builder()
+                .url(postUrl)
+                .post(postBody)
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                // Cancel the post on failure.
+                call.cancel();
+
+                // In order to access the TextView inside the UI thread, the code is executed inside runOnUiThread()
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        TextView tv_response = findViewById(R.id.tv_response);
+                        tv_response.setText("Failed to Connect to Server");
+                    }
+                });
+            }
+
+            @Override
+            public void onResponse(Call call, final Response response) throws IOException {
+                // In order to access the TextView inside the UI thread, the code is executed inside runOnUiThread()
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        TextView tv_response = findViewById(R.id.tv_response);
+                        try {
+                            tv_response.setText(response.body().string());
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+            }
+        });
     }
 }

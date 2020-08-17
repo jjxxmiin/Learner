@@ -15,7 +15,7 @@ public class InferActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_train);
+        setContentView(R.layout.activity_infer);
 
         tv_id = (TextView) findViewById(R.id.tv_id);
 

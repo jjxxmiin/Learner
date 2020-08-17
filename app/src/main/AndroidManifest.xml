@@ -17,10 +17,10 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true">
-        <activity android:name=".activity.UploadActivity"></activity>
+        <activity android:name=".activity.NameActivity"></activity>
+        <activity android:name=".activity.TrainActivity" />
         <activity android:name=".activity.TrainListActivity" />
         <activity android:name=".activity.InferActivity" />
-        <activity android:name=".activity.TrainActivity" />
         <activity android:name=".activity.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

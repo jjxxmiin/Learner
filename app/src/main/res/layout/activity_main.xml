@@ -51,13 +51,6 @@
             android:layout_gravity="center"/>
 
         <Button
-            android:id="@+id/btn_upload"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="업로드"
-            android:layout_gravity="center"/>
-
-        <Button
             android:id="@+id/btn_train_list"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
