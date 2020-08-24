@@ -55,7 +55,6 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 str_id = et_id.getText().toString();
                 Intent intent = new Intent(MainActivity.this, InferActivity.class);
-                intent.putExtra("id", str_id);
                 startActivity(intent);
             }
         });

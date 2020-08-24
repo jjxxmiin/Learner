@@ -51,6 +51,13 @@
             android:layout_gravity="center"/>
 
         <Button
+            android:id="@+id/btn_library"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="라이브러리"
+            android:layout_gravity="center"/>
+
+        <Button
             android:id="@+id/btn_train_list"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

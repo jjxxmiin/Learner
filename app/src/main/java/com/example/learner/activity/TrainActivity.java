@@ -51,6 +51,7 @@ public class TrainActivity extends AppCompatActivity {
     private static final int REQUEST_MULTI_IMAGE_ALBUM = 3;
     public static int NUM_IMAGES = 3;
 
+
     ImageView iv_select;
     TextView tv_label;
     Button btn_select, btn_send, btn_capture, btn_multi_select;
@@ -112,17 +113,18 @@ public class TrainActivity extends AppCompatActivity {
         if (resultCode != RESULT_OK) {
             return;
         }
+
         switch (requestCode) {
             case REQUEST_IMAGE_ALBUM: {
                 if (data.getData() != null) {
                     try {
                         Uri dataUri = data.getData();
 
-                        // get path
-                        selectedImagePath = PathUtils.getPath(getApplicationContext(), dataUri);
-
                         // set image
                         iv_select.setImageURI(dataUri);
+
+                        // get path
+                        selectedImagePath = PathUtils.getPath(getApplicationContext(), dataUri);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -135,8 +137,8 @@ public class TrainActivity extends AppCompatActivity {
                     Bitmap capture_img = BitmapFactory.decodeFile(captureImagePath);
 
                     // file name
-                    String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-                    String pictureFile = "picture_" + timeStamp + ".jpg";
+                    String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+                    String pictureFile = "picture_" + timestamp + ".jpg";
 
                     // rotate
                     capture_img = rotate(capture_img);
@@ -162,12 +164,13 @@ public class TrainActivity extends AppCompatActivity {
                     for (int i=0; i < clipData.getItemCount(); i++) {
                         try {
                             Uri dataUri =  clipData.getItemAt(i).getUri();
-                            // get path
-                            selectedImagePath = PathUtils.getPath(getApplicationContext(), dataUri);
-                            selectedMultiImagePath[i] = selectedImagePath;
 
                             // set image
                             iv_select.setImageURI(dataUri);
+
+                            // get path
+                            selectedImagePath = PathUtils.getPath(getApplicationContext(), dataUri);
+                            selectedMultiImagePath[i] = selectedImagePath;
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -185,6 +188,7 @@ public class TrainActivity extends AppCompatActivity {
         Intent intent = new Intent();
         intent.setType("image/*");
         intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+
         intent.setAction(Intent.ACTION_GET_CONTENT);
         startActivityForResult(Intent.createChooser(intent,"Select Picture"), REQUEST_MULTI_IMAGE_ALBUM);
     }
@@ -245,10 +249,11 @@ public class TrainActivity extends AppCompatActivity {
 
         try {
             FileOutputStream out = new FileOutputStream(img);
-            imageToSave.compress(Bitmap.CompressFormat.JPEG, 100, out);
+            imageToSave.compress(Bitmap.CompressFormat.JPEG, 20, out);
             sendBroadcast(new Intent( Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(img)) );
             out.flush();
             out.close();
+
 
 
         } catch (Exception e) {
@@ -296,7 +301,7 @@ public class TrainActivity extends AppCompatActivity {
             EditText portNumberView = findViewById(R.id.portNumber);
             String portNumber = portNumberView.getText().toString();
 
-            String postUrl = "http://" + ipv4Address + ":" + portNumber + "/";
+            String postUrl = "http://" + ipv4Address + ":" + portNumber + "/train";
 
             // Bitmap을 설정합니다.
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
@@ -305,16 +310,21 @@ public class TrainActivity extends AppCompatActivity {
 
             // 경로에 있는 이미지의 Bitmap을 읽어 들입니다.
             Bitmap bitmap = BitmapFactory.decodeFile(selectedImagePath, options);
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 20, stream);
             byte[] byteArray = stream.toByteArray();
 
+
+
+            String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+
             // 이미지를 서버에 전송합니다.
-            RequestBody postBodyImage = new MultipartBody.Builder()
+            RequestBody requestBody = new MultipartBody.Builder()
                     .setType(MultipartBody.FORM)
-                    .addFormDataPart("image", "androidFlask.jpg", RequestBody.create(MediaType.parse("image/*jpg"), byteArray))
+                    .addFormDataPart("label", tv_label.getText().toString())
+                    .addFormDataPart("image", timestamp + ".jpg", RequestBody.create(MediaType.parse("image/*jpg"), byteArray))
                     .build();
 
-            postRequest(postUrl, postBodyImage);
+            postRequest(postUrl, requestBody);
         }
     }
 

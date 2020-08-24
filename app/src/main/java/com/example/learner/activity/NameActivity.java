@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -17,7 +18,7 @@ public class NameActivity extends AppCompatActivity {
     String label;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_name);
 
@@ -28,9 +29,15 @@ public class NameActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 label = et_label.getText().toString();
-                Intent intent = new Intent(NameActivity.this, TrainActivity.class);
-                intent.putExtra("label", label);
-                startActivity(intent);
+
+                if(label.isEmpty()) {
+                    Toast.makeText(getApplicationContext(), "이름을 꼭 입력해 주세요",Toast.LENGTH_SHORT).show();
+                }
+                else {
+                    Intent intent = new Intent(NameActivity.this, TrainActivity.class);
+                    intent.putExtra("label", label);
+                    startActivity(intent);
+                }
             }
         });
     }
