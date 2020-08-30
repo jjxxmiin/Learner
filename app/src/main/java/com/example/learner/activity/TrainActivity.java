@@ -24,7 +24,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 
 import com.example.learner.R;
-import com.example.learner.utils.PathUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -51,12 +50,11 @@ public class TrainActivity extends AppCompatActivity {
     private static final int REQUEST_MULTI_IMAGE_ALBUM = 3;
     public static int NUM_IMAGES = 3;
 
-
     ImageView iv_select;
     TextView tv_label;
     Button btn_select, btn_send, btn_capture, btn_multi_select;
-    String selectedImagePath;
-    String[] selectedMultiImagePath = new String[NUM_IMAGES];
+    Bitmap selectedImage;
+    Bitmap[] selectedMultiImage = new Bitmap[NUM_IMAGES];
     String captureImagePath;
     String label;
 
@@ -105,7 +103,6 @@ public class TrainActivity extends AppCompatActivity {
         iv_select = findViewById(R.id.iv_select);
 
     }
-
     @Override
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
@@ -120,11 +117,9 @@ public class TrainActivity extends AppCompatActivity {
                     try {
                         Uri dataUri = data.getData();
 
-                        // set image
                         iv_select.setImageURI(dataUri);
-
-                        // get path
-                        selectedImagePath = PathUtils.getPath(getApplicationContext(), dataUri);
+                        selectedImage = MediaStore.Images.Media.getBitmap(this.getContentResolver(), dataUri);
+                        // selectedImagePath = PathUtils.getPath(getApplicationContext(), dataUri);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -133,24 +128,15 @@ public class TrainActivity extends AppCompatActivity {
             }
             case REQUEST_IMAGE_CAPTURE: {
                 try{
-                    // bitmap
-                    Bitmap capture_img = BitmapFactory.decodeFile(captureImagePath);
+                    Bitmap captureImage = BitmapFactory.decodeFile(captureImagePath);
 
-                    // file name
                     String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-                    String pictureFile = "picture_" + timestamp + ".jpg";
+                    String fileName = "picture_" + timestamp + ".jpg";
 
-                    // rotate
-                    capture_img = rotate(capture_img);
+                    selectedImage = rotate(captureImage);
 
-                    // save
-                    createDirectoryAndSaveFile(capture_img, pictureFile);
-
-                    // set image
-                    iv_select.setImageBitmap(capture_img);
-
-                    // path
-                    selectedImagePath = captureImagePath;
+                    createDirectoryAndSaveFile(selectedImage, fileName);
+                    iv_select.setImageBitmap(selectedImage);
                 }catch (Exception e){
                     e.printStackTrace();
                 }
@@ -165,12 +151,13 @@ public class TrainActivity extends AppCompatActivity {
                         try {
                             Uri dataUri =  clipData.getItemAt(i).getUri();
 
-                            // set image
                             iv_select.setImageURI(dataUri);
 
-                            // get path
-                            selectedImagePath = PathUtils.getPath(getApplicationContext(), dataUri);
-                            selectedMultiImagePath[i] = selectedImagePath;
+                            selectedImage = MediaStore.Images.Media.getBitmap(this.getContentResolver(), dataUri);
+
+                            // selectedImagePath = PathUtils.getPath(getApplicationContext(), dataUri);
+
+                            selectedMultiImage[i] = selectedImage;
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -178,12 +165,11 @@ public class TrainActivity extends AppCompatActivity {
                 }
                 else if (uri != null) { // single image
                     iv_select.setImageURI(uri);
-                    selectedMultiImagePath[0] = selectedImagePath;
+                    selectedMultiImage[0] = selectedImage;
                 }
             }
         }
     }
-
     public void selectMultiImage(View v) {
         Intent intent = new Intent();
         intent.setType("image/*");
@@ -192,7 +178,6 @@ public class TrainActivity extends AppCompatActivity {
         intent.setAction(Intent.ACTION_GET_CONTENT);
         startActivityForResult(Intent.createChooser(intent,"Select Picture"), REQUEST_MULTI_IMAGE_ALBUM);
     }
-
     public void selectImage(View v) {
         Intent intent = new Intent();
         intent.setType("image/*");
@@ -200,13 +185,13 @@ public class TrainActivity extends AppCompatActivity {
         intent.setAction(Intent.ACTION_GET_CONTENT);
         startActivityForResult(intent, REQUEST_IMAGE_ALBUM);
     }
-
     public void captureImage() {
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         if (intent.resolveActivity(getPackageManager()) != null) {
             File photoFile = null;
             try {
                 photoFile = createImageFile();
+                captureImagePath = photoFile.getAbsolutePath();
             } catch (IOException e) {
                 Toast.makeText(this,
                         "Photo file can't be created, please try again",
@@ -220,20 +205,17 @@ public class TrainActivity extends AppCompatActivity {
             }
         }
     }
-
     private File createImageFile() throws IOException {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String pictureFile = "picture_" + timeStamp;
+        String fileName = "picture_" + timeStamp;
         File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-        File image = File.createTempFile(
-                pictureFile,
+        File photoFile = File.createTempFile(
+                fileName,
                 ".jpg",
                 storageDir
         );
-        captureImagePath = image.getAbsolutePath();
-        return image;
+        return photoFile;
     }
-
     private void createDirectoryAndSaveFile(Bitmap imageToSave, String fileName) {
         String img_folder = "/sdcard/Pictures/Learner";
 
@@ -254,30 +236,26 @@ public class TrainActivity extends AppCompatActivity {
             out.flush();
             out.close();
 
-
-
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-
-    private Bitmap rotate(Bitmap capture_img) throws IOException {
+    private Bitmap rotate(Bitmap img) throws IOException {
         Bitmap rotate_img;
         // rotate
         ExifInterface exif = new ExifInterface(captureImagePath);
         int exifOrientation = exif.getAttributeInt(
-                ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
-        rotate_img = _rotate(capture_img, _exifOrientationToDegrees(exifOrientation));
+                ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED);
+
+        rotate_img = _rotate(img, _exifOrientationToDegrees(exifOrientation));
 
         return rotate_img;
     }
-
     private Bitmap _rotate(Bitmap bitmap, float degree) {
         Matrix matrix = new Matrix();
         matrix.postRotate(degree);
         return Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
     }
-
     private int _exifOrientationToDegrees(int exifOrientation) {
         if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_90) {
             return 90;
@@ -288,10 +266,9 @@ public class TrainActivity extends AppCompatActivity {
         }
         return 0;
     }
-
     private void connectServer(View v) {
 
-        if (selectedImagePath == null) {
+        if (selectedImage == null) {
             Toast.makeText(this, "이미지를 선택하세요", LENGTH_LONG).show();
         }
         else {
@@ -309,11 +286,10 @@ public class TrainActivity extends AppCompatActivity {
             options.inPreferredConfig = Bitmap.Config.RGB_565;
 
             // 경로에 있는 이미지의 Bitmap을 읽어 들입니다.
-            Bitmap bitmap = BitmapFactory.decodeFile(selectedImagePath, options);
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 20, stream);
+            // Bitmap bitmap = BitmapFactory.decodeFile(selectedImagePath, options);
+
+            selectedImage.compress(Bitmap.CompressFormat.JPEG, 20, stream);
             byte[] byteArray = stream.toByteArray();
-
-
 
             String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
 
@@ -327,7 +303,6 @@ public class TrainActivity extends AppCompatActivity {
             postRequest(postUrl, requestBody);
         }
     }
-
     private void postRequest(String postUrl, RequestBody postBody) {
 
         OkHttpClient client = new OkHttpClient();
@@ -370,4 +345,5 @@ public class TrainActivity extends AppCompatActivity {
             }
         });
     }
+
 }
