@@ -3,18 +3,18 @@ package com.example.learner.activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.learner.R;
+import com.gc.materialdesign.views.ButtonRectangle;
 
 public class NameActivity extends AppCompatActivity {
 
     EditText et_label;
-    Button btn_label;
+    ButtonRectangle btn_label;
     String label;
 
     @Override
@@ -23,7 +23,7 @@ public class NameActivity extends AppCompatActivity {
         setContentView(R.layout.activity_name);
 
         et_label = (EditText) findViewById(R.id.et_label);
-        btn_label = (Button) findViewById(R.id.btn_label);
+        btn_label = (ButtonRectangle) findViewById(R.id.btn_label);
 
         btn_label.setOnClickListener(new View.OnClickListener() {
             @Override

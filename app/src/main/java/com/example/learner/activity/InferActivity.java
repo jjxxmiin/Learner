@@ -10,7 +10,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -21,6 +20,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 
 import com.example.learner.R;
+import com.gc.materialdesign.views.ButtonRectangle;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -45,7 +45,7 @@ public class InferActivity extends AppCompatActivity {
     private static final int GET_CAPTURE = 1;
 
     ImageView iv_infer;
-    Button btn_capture, btn_infer;
+    ButtonRectangle btn_capture, btn_infer;
     Bitmap selectedImage;
     String captureImagePath;
 
@@ -56,7 +56,7 @@ public class InferActivity extends AppCompatActivity {
 
         iv_infer = (ImageView) findViewById(R.id.iv_infer);
 
-        btn_capture = findViewById(R.id.btn_capture);
+        btn_capture = (ButtonRectangle) findViewById(R.id.btn_capture);
         btn_capture.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -64,7 +64,7 @@ public class InferActivity extends AppCompatActivity {
             }
         });
 
-        btn_infer = (Button) findViewById(R.id.btn_infer);
+        btn_infer = (ButtonRectangle) findViewById(R.id.btn_infer);
         btn_infer.setOnClickListener(new View.OnClickListener() {
             public void onClick(View view) {
                 connectServer(view);

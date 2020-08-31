@@ -12,7 +12,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -24,6 +23,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 
 import com.example.learner.R;
+import com.gc.materialdesign.views.ButtonRectangle;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -52,7 +52,7 @@ public class TrainActivity extends AppCompatActivity {
 
     ImageView iv_select;
     TextView tv_label;
-    Button btn_select, btn_send, btn_capture, btn_multi_select;
+    ButtonRectangle btn_select, btn_send, btn_capture, btn_multi_select;
     Bitmap selectedImage;
     Bitmap[] selectedMultiImage = new Bitmap[NUM_IMAGES];
     String captureImagePath;
@@ -69,22 +69,22 @@ public class TrainActivity extends AppCompatActivity {
         tv_label = (TextView) findViewById(R.id.tv_label);
         tv_label.setText(label);
 
-        btn_send = (Button) findViewById(R.id.btn_send);
+        btn_send = (ButtonRectangle) findViewById(R.id.btn_send);
         btn_send.setOnClickListener(new View.OnClickListener() {
             public void onClick(View view) {
                 connectServer(view);
             }
         });
 
-        btn_multi_select = (Button) findViewById(R.id.btn_multi_select);
-        btn_multi_select.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                selectMultiImage(view);
-            }
-        });
+//        btn_multi_select = (Button) findViewById(R.id.btn_multi_select);
+//        btn_multi_select.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                selectMultiImage(view);
+//            }
+//        });
 
-        btn_select = findViewById(R.id.btn_select);
+        btn_select = (ButtonRectangle) findViewById(R.id.btn_select);
         btn_select.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -92,7 +92,7 @@ public class TrainActivity extends AppCompatActivity {
             }
         });
 
-        btn_capture = findViewById(R.id.btn_capture);
+        btn_capture = (ButtonRectangle) findViewById(R.id.btn_capture);
         btn_capture.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
