@@ -57,6 +57,7 @@ public class TrainActivity extends AppCompatActivity {
     Bitmap[] selectedMultiImage = new Bitmap[NUM_IMAGES];
     String captureImagePath;
     String label;
+    Boolean isCapture;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -115,6 +116,7 @@ public class TrainActivity extends AppCompatActivity {
             case REQUEST_IMAGE_ALBUM: {
                 if (data.getData() != null) {
                     try {
+                        isCapture = false;
                         Uri dataUri = data.getData();
 
                         iv_select.setImageURI(dataUri);
@@ -128,6 +130,7 @@ public class TrainActivity extends AppCompatActivity {
             }
             case REQUEST_IMAGE_CAPTURE: {
                 try{
+                    isCapture = true;
                     Bitmap captureImage = BitmapFactory.decodeFile(captureImagePath);
 
                     String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
@@ -277,8 +280,14 @@ public class TrainActivity extends AppCompatActivity {
             String ipv4Address = ipv4AddressView.getText().toString();
             EditText portNumberView = findViewById(R.id.portNumber);
             String portNumber = portNumberView.getText().toString();
+            String postUrl;
 
-            String postUrl = "http://" + ipv4Address + ":" + portNumber + "/train";
+            if(isCapture){
+                postUrl = "http://" + ipv4Address + ":" + portNumber + "/train/capture";
+            }
+            else {
+                postUrl = "http://" + ipv4Address + ":" + portNumber + "/train/gallery";
+            }
 
             // Bitmap을 설정합니다.
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
@@ -287,7 +296,6 @@ public class TrainActivity extends AppCompatActivity {
 
             // 경로에 있는 이미지의 Bitmap을 읽어 들입니다.
             // Bitmap bitmap = BitmapFactory.decodeFile(selectedImagePath, options);
-
             selectedImage.compress(Bitmap.CompressFormat.JPEG, 20, stream);
             byte[] byteArray = stream.toByteArray();
 
